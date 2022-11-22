@@ -67,7 +67,7 @@ def run(rank, n_gpus, hps):
   train_sampler = DistributedBucketSampler(
       train_dataset,
       hps.train.batch_size,
-      [32,300,400,500,600,700,800,900,1000],
+      [32,300,400,500,600,700,800,900,1000,1200,1400,1600,2000],
       num_replicas=n_gpus,
       rank=rank,
       shuffle=True)
@@ -168,12 +168,12 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
       y_d_hat_r, y_d_hat_g, _, _ = net_d(y, y_hat.detach())
       with autocast(enabled=False):
         loss_disc, losses_disc_r, losses_disc_g = discriminator_loss(y_d_hat_r, y_d_hat_g)
-        loss_disc_all = loss_disc
-    optim_d.zero_grad()
-    scaler.scale(loss_disc_all).backward()
-    scaler.unscale_(optim_d)
-    grad_norm_d = commons.clip_grad_value_(net_d.parameters(), None)
-    scaler.step(optim_d)
+        loss_disc_all = 0.0 # loss_disc
+    # optim_d.zero_grad()
+    # scaler.scale(loss_disc_all).backward()
+    # scaler.unscale_(optim_d)
+    # grad_norm_d = commons.clip_grad_value_(net_d.parameters(), None)
+    # scaler.step(optim_d)
 
     with autocast(enabled=hps.train.fp16_run):
       # Generator
@@ -185,7 +185,8 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
 
         loss_fm = feature_loss(fmap_r, fmap_g)
         loss_gen, losses_gen = generator_loss(y_d_hat_g)
-        loss_gen_all = loss_gen + loss_fm + loss_mel + loss_dur + loss_kl
+        # loss_gen_all = loss_gen + loss_fm + loss_mel + loss_dur + loss_kl
+        loss_gen_all = loss_dur
     optim_g.zero_grad()
     scaler.scale(loss_gen_all).backward()
     scaler.unscale_(optim_g)
@@ -202,7 +203,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
           100. * batch_idx / len(train_loader)))
         logger.info([x.item() for x in losses] + [global_step, lr])
         
-        scalar_dict = {"loss/g/total": loss_gen_all, "loss/d/total": loss_disc_all, "learning_rate": lr, "grad_norm_d": grad_norm_d, "grad_norm_g": grad_norm_g}
+        scalar_dict = {"loss/g/total": loss_gen_all, "loss/d/total": loss_disc_all, "learning_rate": lr, "grad_norm_g": grad_norm_g}
         scalar_dict.update({"loss/g/fm": loss_fm, "loss/g/mel": loss_mel, "loss/g/dur": loss_dur, "loss/g/kl": loss_kl})
 
         scalar_dict.update({"loss/g/{}".format(i): v for i, v in enumerate(losses_gen)})

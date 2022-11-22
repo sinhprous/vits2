@@ -320,7 +320,7 @@ class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):
             if idx_bucket != -1:
                 buckets[idx_bucket].append(i)
   
-        for i in range(len(buckets) - 1, 0, -1):
+        for i in range(len(buckets) - 1, -1, -1):
             if len(buckets[i]) == 0:
                 buckets.pop(i)
                 self.boundaries.pop(i+1)
@@ -347,6 +347,8 @@ class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):
               indices.append(list(range(len(bucket))))
   
       batches = []
+      for i in range(len(self.buckets)):
+          print(len(self.buckets[i]))
       for i in range(len(self.buckets)):
           bucket = self.buckets[i]
           len_bucket = len(bucket)
