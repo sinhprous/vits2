@@ -67,7 +67,7 @@ def run(rank, n_gpus, hps):
   train_sampler = DistributedBucketSampler(
       train_dataset,
       hps.train.batch_size,
-      [32,300,400,500,600,700,800,900,1000,1200,1400,1600,2000],
+      [32,300,400,500,600,700,800,900,1000,1200,1400,1600,2000,2400,3000],
       num_replicas=n_gpus,
       rank=rank,
       shuffle=True)
@@ -185,8 +185,8 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
 
         loss_fm = feature_loss(fmap_r, fmap_g)
         loss_gen, losses_gen = generator_loss(y_d_hat_g)
-        # loss_gen_all = loss_gen + loss_fm + loss_mel + loss_dur + loss_kl
-        loss_gen_all = loss_dur
+        loss_gen_all = 0.0*loss_gen + 0.0*loss_fm + 0.0*loss_mel + loss_dur + 0.0*loss_kl
+        # loss_gen_all = loss_dur
     optim_g.zero_grad()
     scaler.scale(loss_gen_all).backward()
     scaler.unscale_(optim_g)
